@@ -116,12 +116,6 @@ class Producto:
             self.tipo = "zapato"
         elif "xbox" in self.nombre.lower() or "consola" in self.nombre.lower():
             self.tipo = "consola"
-        elif "perfume" in self.nombre.lower():
-            self.tipo = "perfume"
-        elif "laptop" in self.nombre.lower():
-            self.tipo = "laptop"
-        elif "pantalla" in self.nombre.lower():
-            self.tipo = "pantalla"
     
     def _extraer_id(self) -> Optional[str]:
         patrones_ruta = [
@@ -229,12 +223,10 @@ class TestFlujoCompleto:
             input("   Presiona ENTER para continuar...")
     
     def teardown_method(self):
-        """Limpieza final - cerrar navegador"""
-        print("\n🔒 Cerrando el navegador...")
+        """Limpieza final"""
+        print("\n📌 El navegador se mantiene abierto")
         if hasattr(self, 'driver'):
-            tomar_screenshot(self.driver, "fin_prueba_antes_cerrar")
-            self.driver.quit()
-            print("✅ Navegador cerrado correctamente")
+            tomar_screenshot(self.driver, "fin_prueba")
     
     def _click_seguro(self, elemento):
         """Click seguro"""
@@ -428,121 +420,73 @@ class TestFlujoCompleto:
     @log_step("Flujo completo")
     @screenshot_on_error
     def test_flujo_completo_compra(self):
-        """Flujo completo - Orden: Zapatos, Perfume, Laptop, Pantalla, Xbox"""
+        """Flujo completo"""
         
-        # Productos en el orden solicitado: Zapatos, Perfume, Laptop, Pantalla, Xbox
+        # Productos a comprar
         productos_a_comprar = [
-            # 1. Zapatos
             Producto(
                 nombre="MOCASÍN LOB - Zapato para hombre",
                 url="https://www.liverpool.com.mx/tienda/pdp/mocas%C3%ADn-lob-para-hombre/99984403436?skuid=1176440151",
                 tallas_preferidas=["27"]
             ),
-            # 2. Perfume
+            Producto(
+                nombre="Xbox Series X 1TB",
+                url="https://www.liverpool.com.mx/tienda/pdp/consola-fija-xbox-one-series-x-de-1-tb-microsoft/1100132318"
+            ),
             Producto(
                 nombre="Perfume Azzaro The Most Wanted Intense",
                 url="https://www.liverpool.com.mx/tienda/pdp/set-eau-de-parfum-azzaro-the-most-wanted-intense-para-hombre/1186100251"
             ),
-            # 3. Laptop
             Producto(
                 nombre="Laptop Lenovo 15.6\" Core i3",
                 url="https://www.liverpool.com.mx/tienda/pdp/laptop-lenovo-82xb00c2us-15.6-pulgadas-full-hd-intel-core-i3-intel-uhd-graphics-8-gb-ram-128-gb-ssd/1187427513"
             ),
-            # 4. Pantalla
             Producto(
                 nombre="Pantalla Sony OLED 65\" 4K Bravia",
                 url="https://www.liverpool.com.mx/tienda/pdp/pantalla-smart-tv-sony-oled-de-65-pulgadas-4k-bravia-8mk2-k-65xr80m2-con-google-tv/1179253441"
-            ),
-            # 5. Xbox (último)
-            Producto(
-                nombre="Xbox Series X 1TB",
-                url="https://www.liverpool.com.mx/tienda/pdp/consola-fija-xbox-one-series-x-de-1-tb-microsoft/1100132318"
             )
         ]
         
         print("\n" + "="*60)
         print("🚀 INICIANDO FLUJO DE COMPRA")
-        print("📋 ORDEN: Zapatos → Perfume → Laptop → Pantalla → Xbox")
         print("="*60)
         tomar_screenshot(self.driver, "inicio_flujo_completo")
         
-        # Agregar productos en el orden establecido
-        productos_exitosos = []
-        productos_fallidos = []
-        
+        # Agregar productos
+        productos_ok = []
         for idx, producto in enumerate(productos_a_comprar, 1):
-            # Mostrar el orden del producto
-            orden_texto = ""
-            if idx == 1:
-                orden_texto = "🥇 ZAPATO"
-            elif idx == 2:
-                orden_texto = "🥈 PERFUME"
-            elif idx == 3:
-                orden_texto = "🥉 LAPTOP"
-            elif idx == 4:
-                orden_texto = "📺 PANTALLA"
-            elif idx == 5:
-                orden_texto = "🎮 XBOX"
-            
-            print(f"\n{'─'*50}")
-            print(f"📦 Procesando ({idx}/5) - {orden_texto}: {producto.nombre[:50]}")
-            print(f"{'─'*50}")
-            tomar_screenshot(self.driver, f"inicio_producto_{idx}_{producto.tipo}")
+            print(f"\n--- Procesando ({idx}/{len(productos_a_comprar)}): {producto.nombre[:40]} ---")
+            tomar_screenshot(self.driver, f"inicio_producto_{idx}")
             
             if self.agregar_producto_al_carrito(producto):
                 self.productos.append(producto)
-                productos_exitosos.append((idx, producto.nombre, producto.tipo))
-                print(f"   ✅ {producto.nombre[:40]} - AGREGADO EXITOSAMENTE")
-                tomar_screenshot(self.driver, f"producto_{idx}_{producto.tipo}_agregado_exitoso")
+                productos_ok.append(producto.nombre)
+                print(f"   ✅ {producto.nombre[:40]} - AGREGADO")
+                tomar_screenshot(self.driver, f"producto_{idx}_agregado_exitoso")
                 time.sleep(TIMEOUTS['medium_pause'])
             else:
-                productos_fallidos.append((idx, producto.nombre, producto.tipo))
-                print(f"   ❌ {producto.nombre[:40]} - ERROR AL AGREGAR")
-                tomar_screenshot(self.driver, f"producto_{idx}_{producto.tipo}_error")
+                print(f"   ❌ {producto.nombre[:40]} - ERROR")
+                tomar_screenshot(self.driver, f"producto_{idx}_error")
         
-        # Verificar carrito final
-        print("\n" + "="*60)
-        print("🛒 VERIFICANDO CARRITO FINAL")
-        print("="*60)
-        self.verificar_carrito()
-        
-        # Resumen final detallado
-        print("\n" + "="*60)
-        print("📊 RESUMEN FINAL DE LA COMPRA")
-        print("="*60)
-        
-        print(f"\n✅ PRODUCTOS AGREGADOS EXITOSAMENTE: {len(productos_exitosos)}/5")
-        for idx, nombre, tipo in productos_exitosos:
-            emoji = ""
-            if tipo == "zapato":
-                emoji = "👞"
-            elif tipo == "perfume":
-                emoji = "👃"
-            elif tipo == "laptop":
-                emoji = "💻"
-            elif tipo == "pantalla":
-                emoji = "📺"
-            elif tipo == "consola":
-                emoji = "🎮"
-            print(f"   {emoji} Paso {idx}: {nombre[:60]}")
-        
-        if productos_fallidos:
-            print(f"\n❌ PRODUCTOS FALLIDOS: {len(productos_fallidos)}/5")
-            for idx, nombre, tipo in productos_fallidos:
-                print(f"   ❌ Paso {idx}: {nombre[:60]}")
-        
-        print(f"\n📦 TOTAL EN CARRITO: {len(self.productos)} productos")
-        
-        # Tomar screenshot final del resumen
-        tomar_screenshot(self.driver, "resumen_final_compra_completa")
+        # Verificar carrito
+        if self.productos:
+            self.verificar_carrito()
+            
+            print("\n" + "-"*40)
+            print("📊 RESUMEN FINAL:")
+            print(f"   Productos agregados exitosamente: {len(self.productos)}")
+            for prod in self.productos:
+                print(f"      ✅ {prod.nombre[:50]}")
+            
+            tomar_screenshot(self.driver, "resumen_final_exitoso")
+        else:
+            print("\n❌ No se pudo agregar ningún producto")
+            tomar_screenshot(self.driver, "resumen_final_sin_productos")
         
         print("\n" + "="*60)
-        print("🎉 FLUJO DE COMPRA COMPLETADO")
-        print("🔒 El navegador se cerrará automáticamente")
+        print("🎉 FLUJO COMPLETADO")
         print("="*60)
-        
-        # Pequeña pausa para ver el resultado antes de cerrar
-        time.sleep(3)
+        tomar_screenshot(self.driver, "flujo_completo_finalizado")
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "-s"])
